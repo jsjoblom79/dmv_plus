@@ -133,6 +133,29 @@ USER_TYPES = [
 # This information is used for determining night start and end times.
 # Later to be edited to use an api
 
+#========================================================
+# Application Settings
+#========================================================
 from datetime import time
 NIGHT_START = time(21,0)
 NIGHT_END = time(5,0)
+
+
+TOTAL_REQUIRED_HOURS = 60
+REQUIRED_DAY_HOURS = 50
+REQUIRED_NIGHT_HOURS = 10
+
+TOTAL_REQ_HOURS_IN_MIN = TOTAL_REQUIRED_HOURS * 60
+DAY_HOURS_IN_MIN = REQUIRED_DAY_HOURS * 60
+NIGHT_HOURS_IN_MIN = REQUIRED_NIGHT_HOURS * 60
+
+
+
+#========================================================
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]

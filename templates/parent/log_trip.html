@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Log Driving Session - DMV+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'view_student' student.id %}" style="color: #4CAF50;">← Back to {{ student.first_name }}'s Profile</a>
+    </div>
+
+    <h1>Log Driving Session</h1>
+    <p>Record a driving session for {{ student.first_name }} {{ student.last_name }}</p>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'log_trip' student.id %}">
+        {% csrf_token %}
+
+        <div style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin-bottom: 20px; background-color: #f9f9f9;">
+            <h3 style="margin-top: 0;">Start Time</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="start_date">Date: *</label>
+                    <input
+                        type="date"
+                        id="start_date"
+                        name="start_date"
+                        required
+                        value="{{ request.POST.start_date|default:today }}"
+                        max="{{ today }}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="start_time">Time: *</label>
+                    <input
+                        type="time"
+                        id="start_time"
+                        name="start_time"
+                        required
+                        value="{{ request.POST.start_time|default:'' }}"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <div style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin-bottom: 20px; background-color: #f9f9f9;">
+            <h3 style="margin-top: 0;">End Time</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="end_date">Date: *</label>
+                    <input
+                        type="date"
+                        id="end_date"
+                        name="end_date"
+                        required
+                        value="{{ request.POST.end_date|default:today }}"
+                        max="{{ today }}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="end_time">Time: *</label>
+                    <input
+                        type="time"
+                        id="end_time"
+                        name="end_time"
+                        required
+                        value="{{ request.POST.end_time|default:'' }}"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <div style="padding: 15px; background-color: #e3f2fd; border-radius: 4px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #1976d2;">
+                <strong>Tip:</strong> Night driving hours (9:00 PM - 5:00 AM) will be automatically tracked separately.
+            </p>
+        </div>
+
+        <div class="form-actions" style="display: flex; gap: 10px;">
+            <button type="submit" class="btn-primary">Log Session</button>
+            <a href="{% url 'view_student' student.id %}" style="display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[type="date"],
+    input[type="time"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}

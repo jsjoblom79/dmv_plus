@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.first_name }} {{ student.last_name }} - DMV+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'parent_dashboard' %}" style="color: #4CAF50;">← Back to Dashboard</a>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+        <div>
+            <h1 style="margin-bottom: 5px;">{{ student.first_name }} {{ student.last_name }}</h1>
+            <p style="color: #666; margin: 0;">Student Profile</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'edit_student' student.id %}" style="display: inline-block; padding: 8px 16px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 4px;">
+                Edit
+            </a>
+            <a href="{% url 'delete_student' student.id %}" style="display: inline-block; padding: 8px 16px; background-color: #f44336; color: white; text-decoration: none; border-radius: 4px;">
+                Remove
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Student Information -->
+    <div class="info-section" style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
+        <h2>Student Information</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+            <div>
+                <p style="margin: 5px 0; color: #666;"><strong>Full Name:</strong></p>
+                <p style="margin: 5px 0;">{{ student.first_name }} {{ student.last_name }}</p>
+            </div>
+            <div>
+                <p style="margin: 5px 0; color: #666;"><strong>Permit Number:</strong></p>
+                <p style="margin: 5px 0;">{{ student.permit_number|default:"Not provided" }}</p>
+            </div>
+            <div>
+                <p style="margin: 5px 0; color: #666;"><strong>Driver's Education:</strong></p>
+                <p style="margin: 5px 0;">
+                    {% if student.drivers_ed_completed %}
+                        ✓ Completed
+                    {% else %}
+                        Not completed
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <p style="margin: 5px 0; color: #666;"><strong>Account Created:</strong></p>
+                <p style="margin: 5px 0;">{{ student.created_at|date:"M d, Y" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Driving Hours Summary -->
+    <div class="hours-section" style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
+        <h2>Driving Hours Summary</h2>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+            <div style="text-align: center; padding: 15px; background-color: #f5f5f5; border-radius: 4px;">
+                <p style="margin: 0; color: #666; font-size: 0.9em;">Total Hours</p>
+                <p style="margin: 5px 0; font-size: 2em; font-weight: bold; color: #4CAF50;">{{ total_hours }}</p>
+            </div>
+            <div style="text-align: center; padding: 15px; background-color: #f5f5f5; border-radius: 4px;">
+                <p style="margin: 0; color: #666; font-size: 0.9em;">Day Hours</p>
+                <p style="margin: 5px 0; font-size: 2em; font-weight: bold; color: #2196F3;">{{ day_hours }}</p>
+            </div>
+            <div style="text-align: center; padding: 15px; background-color: #f5f5f5; border-radius: 4px;">
+                <p style="margin: 0; color: #666; font-size: 0.9em;">Night Hours</p>
+                <p style="margin: 5px 0; font-size: 2em; font-weight: bold; color: #FF9800;">{{ night_hours }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Trips -->
+    <div class="trips-section" style="border: 1px solid #ddd; padding: 20px; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0;">Driving Sessions ({{ trip_count }})</h2>
+            <a href="{% url 'log_trip' student.id %}" style="display: inline-block; padding: 8px 16px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">
+                + Log New Session
+            </a>
+        </div>
+
+        {% if trips %}
+            <div class="trip-list">
+                {% for trip in trips %}
+                    <div style="border-bottom: 1px solid #eee; padding: 15px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <p style="margin: 0; font-weight: bold;">
+                                    <a href="{% url 'view_trip' trip.trip_id %}" style="color: #4CAF50; text-decoration: none;">
+                                        {{ trip.start_time|date:"M d, Y" }} - {{ trip.start_time|time:"g:i A" }}
+                                        {% if trip.end_time %}
+                                            to {{ trip.end_time|time:"g:i A" }}
+                                        {% else %}
+                                            (In Progress)
+                                        {% endif %}
+                                    </a>
+                                </p>
+                                <p style="margin: 5px 0; color: #666;">
+                                    Duration: {{ trip.duration }} minutes
+                                    {% if trip.is_night %}
+                                        <span style="background-color: #FF9800; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; margin-left: 5px;">Night</span>
+                                    {% else %}
+                                        <span style="background-color: #2196F3; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; margin-left: 5px;">Day</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                {% if trip.is_approved %}
+                                    <span style="color: #4CAF50;">✓ Approved</span>
+                                {% else %}
+                                    <span style="color: #FF9800;">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 40px; background-color: #f5f5f5; border-radius: 4px;">
+                <p style="color: #666; margin-bottom: 15px;">No driving sessions logged yet.</p>
+                <a href="{% url 'log_trip' student.id %}" class="btn-primary" style="display: inline-block; width: auto; padding: 10px 20px;">
+                    Log First Session
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

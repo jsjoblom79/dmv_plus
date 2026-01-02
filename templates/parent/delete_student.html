@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Remove Student - DMV+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'view_student' student.id %}" style="color: #4CAF50;">← Back to Student</a>
+    </div>
+
+    <h1>Remove Student</h1>
+
+    <div class="message error" style="margin: 20px 0;">
+        <strong>Warning:</strong> Are you sure you want to remove {{ student.first_name }} {{ student.last_name }} from your account?
+    </div>
+
+    <p>This will remove the student from your account, but their profile and driving history will be preserved. You can re-add them later if needed.</p>
+
+    <form method="post" action="{% url 'delete_student' student.id %}">
+        {% csrf_token %}
+
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 30px;">
+            <button type="submit" style="background-color: #f44336; flex: 1;">
+                Yes, Remove Student
+            </button>
+            <a href="{% url 'view_student' student.id %}" style="display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

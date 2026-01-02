@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Parent Dashboard - DMV+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+    <h1>Parent Dashboard</h1>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <p>Welcome, {{ user.get_full_name }}!</p>
+
+    <div class="dashboard-section" style="margin-top: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0;">Your Students ({{ student_count }})</h2>
+            <a href="{% url 'add_student' %}" class="btn-primary" style="display: inline-block; padding: 8px 16px; width: auto;">
+                + Add Student
+            </a>
+        </div>
+
+        {% if students %}
+            <div class="student-list">
+                {% for student in students %}
+                    <div class="student-card" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <h3 style="margin: 0 0 10px 0;">
+                                    {{ student.first_name }} {{ student.last_name }}
+                                </h3>
+                                <p style="margin: 5px 0; color: #666;">
+                                    <strong>Permit #:</strong> {{ student.permit_number|default:"Not provided" }}
+                                </p>
+                                <p style="margin: 5px 0; color: #666;">
+                                    <strong>Driver's Ed:</strong>
+                                    {% if student.drivers_ed_completed %}
+                                        ✓ Completed
+                                    {% else %}
+                                        Not completed
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div>
+                                <a href="{% url 'view_student' student.id %}" style="display: inline-block; padding: 6px 12px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px; margin-right: 5px;">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 40px; background-color: #f5f5f5; border-radius: 4px;">
+                <p style="color: #666; margin-bottom: 15px;">You haven't added any students yet.</p>
+                <a href="{% url 'add_student' %}" class="btn-primary" style="display: inline-block; width: auto; padding: 10px 20px;">
+                    Add Your First Student
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-section" style="margin-top: 30px;">
+        <h2>Recent Activity</h2>
+
+        {% if recent_trips %}
+            <div class="trip-list">
+                {% for trip in recent_trips %}
+                    <div style="border: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <p style="margin: 0; font-weight: bold;">
+                                    <a href="{% url 'view_trip' trip.trip_id %}" style="color: #4CAF50; text-decoration: none;">
+                                        {{ trip.student.first_name }} {{ trip.student.last_name }}
+                                    </a>
+                                </p>
+                                <p style="margin: 5px 0; color: #666; font-size: 0.9em;">
+                                    {{ trip.start_time|date:"M d, Y" }} - {{ trip.start_time|time:"g:i A" }} to {{ trip.end_time|time:"g:i A" }}
+                                </p>
+                                <p style="margin: 5px 0; color: #666; font-size: 0.9em;">
+                                    {{ trip.duration }} minutes
+                                    {% if trip.is_night %}
+                                        <span style="background-color: #FF9800; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; margin-left: 5px;">Night</span>
+                                    {% else %}
+                                        <span style="background-color: #2196F3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; margin-left: 5px;">Day</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #666;">No driving sessions logged yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

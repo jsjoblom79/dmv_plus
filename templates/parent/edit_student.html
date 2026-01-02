@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit {{ student.first_name }} {{ student.last_name }} - DMV+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'view_student' student.id %}" style="color: #4CAF50;">← Back to Student</a>
+    </div>
+
+    <h1>Edit Student</h1>
+    <p>Update information for {{ student.first_name }} {{ student.last_name }}</p>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'edit_student' student.id %}">
+        {% csrf_token %}
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="first_name">First Name: *</label>
+                <input
+                    type="text"
+                    id="first_name"
+                    name="first_name"
+                    required
+                    value="{{ student.first_name }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="last_name">Last Name: *</label>
+                <input
+                    type="text"
+                    id="last_name"
+                    name="last_name"
+                    required
+                    value="{{ student.last_name }}"
+                >
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="permit_number">Learner's Permit Number:</label>
+            <input
+                type="text"
+                id="permit_number"
+                name="permit_number"
+                value="{{ student.permit_number }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label style="display: flex; align-items: center; font-weight: normal;">
+                <input
+                    type="checkbox"
+                    id="drivers_ed_completed"
+                    name="drivers_ed_completed"
+                    style="width: auto; margin-right: 10px;"
+                    {% if student.drivers_ed_completed %}checked{% endif %}
+                >
+                <span style="font-weight: bold;">Driver's Education Completed</span>
+            </label>
+        </div>
+
+        <div class="form-actions" style="display: flex; gap: 10px;">
+            <button type="submit" class="btn-primary">Save Changes</button>
+            <a href="{% url 'view_student' student.id %}" style="display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

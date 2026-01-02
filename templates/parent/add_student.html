@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Student - DMV+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Add New Student</h1>
+    <p>Add a student to track their driving hours and progress.</p>
+    
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <form method="post" action="{% url 'add_student' %}">
+        {% csrf_token %}
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="first_name">First Name: *</label>
+                <input 
+                    type="text" 
+                    id="first_name" 
+                    name="first_name" 
+                    required 
+                    placeholder="John"
+                    value="{{ request.POST.first_name|default:'' }}"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="last_name">Last Name: *</label>
+                <input 
+                    type="text" 
+                    id="last_name" 
+                    name="last_name" 
+                    required 
+                    placeholder="Doe"
+                    value="{{ request.POST.last_name|default:'' }}"
+                >
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="permit_number">Learner's Permit Number:</label>
+            <input 
+                type="text" 
+                id="permit_number" 
+                name="permit_number" 
+                placeholder="Optional"
+                value="{{ request.POST.permit_number|default:'' }}"
+            >
+            <small>You can add this later if they don't have their permit yet.</small>
+        </div>
+        
+        <div class="form-group">
+            <label style="display: flex; align-items: center; font-weight: normal;">
+                <input 
+                    type="checkbox" 
+                    id="drivers_ed_completed" 
+                    name="drivers_ed_completed"
+                    style="width: auto; margin-right: 10px;"
+                    {% if request.POST.drivers_ed_completed %}checked{% endif %}
+                >
+                <span style="font-weight: bold;">Driver's Education Completed</span>
+            </label>
+            <small>Check this if the student has completed their driver's education course.</small>
+        </div>
+        
+        <div class="form-actions" style="display: flex; gap: 10px;">
+            <button type="submit" class="btn-primary">Add Student</button>
+            <a href="{% url 'parent_dashboard' %}" style="display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
