@@ -56,7 +56,7 @@ class AccountUser(AbstractBaseUser, PermissionsMixin):
     #     ('STUDENT', 'Student'),
     #     ('UNDEFINED', 'Undefined'),
     # ]
-    user_type = models.CharField(max_length=50, choices=settings.USER_TYPES, default='Undefined')
+    user_type = models.CharField(max_length=50, choices=settings.USER_TYPES, default='UNDEFINED')
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

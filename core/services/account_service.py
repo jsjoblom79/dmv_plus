@@ -9,6 +9,6 @@ class AccountService:
 
     def is_student(self, user):
         return AccountUser.objects.filter(
-            user=user,
+            email=user.email,
             user_type='Student'
         ).exists()

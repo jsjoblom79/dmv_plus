@@ -1,6 +1,6 @@
 import uuid
 from django.db import models
-from student.services.driving_session_service import DrivingSessionService
+from student.services import driving_session_service
 
 class Trip(models.Model):
     trip_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -22,7 +22,8 @@ class Trip(models.Model):
         return f"{self.trip_id} Duration: {self.duration}"
 
     def save(self, *args, **kwargs):
-        if self.pk:
-            is_night = DrivingSessionService.is_night(self.start_time, self.end_time)
-
+        if self.start_time and self.end_time:
+            is_night = driving_session_service.is_night(self.start_time, self.end_time)
+            self.is_night = is_night
+            self.duration = int((self.end_time - self.start_time).total_seconds() / 60)
         super().save(*args, **kwargs)

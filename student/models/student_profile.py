@@ -5,8 +5,9 @@ class StudentProfile(models.Model):
     # currently the student wont be able to login. only the parent can see the students.
     # at a later time the student will be able to create an AccountUser from an invite and claim.
     # their profile.
-    # user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, help_text="User account if student has claimed their profile.")
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
     permit_number = models.CharField(max_length=20, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -17,4 +18,4 @@ class StudentProfile(models.Model):
     road_test_passed = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.first_name} {self.user.last_name} - Permit Number: {self.permit_number}"
+        return f"{self.first_name} {self.last_name} - Permit Number: {self.permit_number}"
