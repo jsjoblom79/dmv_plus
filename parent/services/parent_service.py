@@ -8,7 +8,7 @@ from parent.models.parent_profile import ParentProfile
 @receiver(post_save, sender=AccountUser)
 def create_profile(sender, instance, created, **kwargs):
     if created:
-        if instance.user_type == 'PARENT' or instance.user_type is None:
+        if instance.user_type in ['PARENT', 'UNDEFINED']:
             ParentProfile.objects.create(user=instance)
         # if instance.user_type == 'PARENT':
         #     ParentProfile.objects.create(user=instance)

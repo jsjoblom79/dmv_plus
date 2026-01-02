@@ -6,25 +6,20 @@ from student.models.driving_sessions import Trip
 
 
 
-def is_night(self, start_time, end_time):
+def is_night(start_time, end_time):
     start_t = start_time.time()
     end_t = end_time.time()
-
-    if start_time.date() != end_time.date():
-        return True
 
     if end_t is None:
-        if start_t >= settings.NIGHT_START:
-            return True
-        elif start_t <= settings.NIGHT_START and end_t > settings.NIGHT_START:
-            return True
+        return start_t >= settings.NIGHT_START
+
+    if start_t >= settings.NIGHT_START and end_t <= settings.NIGHT_END:
+        return True
+
+    if start_t < settings.NIGHT_START < end_t:
+        return True
 
     return False
-
-def get_duration(self, start_time, end_time):
-    start_t = start_time.time()
-    end_t = end_time.time()
-    return int(end_t - start_t)
 
 @transaction.atomic
 def create_trip(*, parent_profile, student_profile, start_time, end_time):
