@@ -137,7 +137,7 @@ USER_TYPES = [
 # Application Settings
 #========================================================
 from datetime import time
-NIGHT_START = time(21,0)
+NIGHT_START = time(20,0)
 NIGHT_END = time(5,0)
 
 

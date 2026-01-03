@@ -6,7 +6,7 @@ class Trip(models.Model):
     trip_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     parent = models.ForeignKey('parent.ParentProfile', on_delete=models.CASCADE)
     student = models.ForeignKey('student.StudentProfile', on_delete=models.CASCADE)
-    start_time = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField(blank=True, null=True)
     end_time = models.DateTimeField(blank=True, null=True)
 
     is_night = models.BooleanField(default=False)
@@ -23,8 +23,8 @@ class Trip(models.Model):
 
     def save(self, *args, **kwargs):
         if self.start_time and self.end_time:
-            from student.services.driving_session_service import is_night
-            is_night = is_night(self.start_time, self.end_time)
+            from student.services.driving_session_service import determine_night
+            is_night = determine_night(self.start_time, self.end_time)
             self.is_night = is_night
             self.duration = int((self.end_time - self.start_time).total_seconds() / 60)
             print(self.duration)

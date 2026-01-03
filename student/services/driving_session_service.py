@@ -6,14 +6,15 @@ from student.models.driving_sessions import Trip
 
 
 
-def is_night(start_time, end_time):
+def determine_night(start_time, end_time):
     start_t = start_time.time()
     end_t = end_time.time()
+    print(f"Start time: {start_t} | End time: {end_t}")
+    # if end_t is None:
+    #     return start_t >= settings.NIGHT_START
+    print(f"Setting Start Time: {settings.NIGHT_START} | Setting End Time: {settings.NIGHT_END}")
 
-    if end_t is None:
-        return start_t >= settings.NIGHT_START
-
-    if start_t >= settings.NIGHT_START and end_t <= settings.NIGHT_END:
+    if start_t >= settings.NIGHT_START:
         return True
 
     if start_t < settings.NIGHT_START < end_t:
