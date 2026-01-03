@@ -27,4 +27,5 @@ class Trip(models.Model):
             is_night = is_night(self.start_time, self.end_time)
             self.is_night = is_night
             self.duration = int((self.end_time - self.start_time).total_seconds() / 60)
+            print(self.duration)
         super().save(*args, **kwargs)

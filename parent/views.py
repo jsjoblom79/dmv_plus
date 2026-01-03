@@ -346,6 +346,42 @@ def view_trip(request, trip_id):
 
     return render(request, 'parent/view_trip.html', context)
 
+@login_required
+def approve_trip(request, trip_id):
+    """
+    Approve a trip - makes it read-only
+    """
+    if request.user.user_type != 'PARENT':
+        raise PermissionDenied("Only parents can approve trips.")
+
+    try:
+        parent_profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        messages.error(request, "Parent profile not found.")
+        return redirect('dashboard')
+
+    trip = get_object_or_404(Trip, trip_id=trip_id)
+
+    # Verify parent owns this trip
+    if trip.parent != parent_profile:
+        raise PermissionDenied("You don't have permission to approve this trip.")
+
+    if trip.is_approved:
+        messages.info(request, 'This trip is already approved.')
+        return redirect('view_trip', trip_id=trip.trip_id)
+
+    if request.method == 'POST':
+        trip.is_approved = True
+        trip.save()
+        messages.success(request, 'Trip approved successfully! This trip is now read-only.')
+        return redirect('view_trip', trip_id=trip.trip_id)
+
+    context = {
+        'trip': trip,
+        'student': trip.student,
+    }
+
+    return render(request, 'parent/approve_trip.html', context)
 
 @login_required
 def edit_trip(request, trip_id):

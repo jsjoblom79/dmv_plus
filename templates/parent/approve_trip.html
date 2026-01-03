@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Approve Trip - DMV+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'view_trip' trip.trip_id %}" style="color: #4CAF50;">← Back to Trip</a>
+    </div>
+
+    <h1>Approve Driving Session</h1>
+
+    <div class="message info" style="margin: 20px 0; background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460;">
+        <strong>Important:</strong> Once approved, this trip cannot be edited or deleted. Please verify all details are correct before approving.
+    </div>
+
+    <div style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin: 20px 0;">
+        <h3>Session Details</h3>
+        <p style="margin: 10px 0;"><strong>Student:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+        <p style="margin: 10px 0;"><strong>Date:</strong> {{ trip.start_time|date:"M d, Y" }}</p>
+        <p style="margin: 10px 0;"><strong>Time:</strong> {{ trip.start_time|time:"g:i A" }} - {{ trip.end_time|time:"g:i A" }}</p>
+        <p style="margin: 10px 0;"><strong>Duration:</strong> {{ trip.duration }} minutes ({{ trip.duration|floatformat:0|add:"0"|floatformat:2 }} hours)</p>
+        <p style="margin: 10px 0;">
+            <strong>Type:</strong>
+            {% if trip.is_night %}
+                <span style="background-color: #FF9800; color: white; padding: 2px 8px; border-radius: 3px;">Night Driving</span>
+            {% else %}
+                <span style="background-color: #2196F3; color: white; padding: 2px 8px; border-radius: 3px;">Day Driving</span>
+            {% endif %}
+        </p>
+    </div>
+
+    <p>Are you sure you want to approve this driving session? This will add the hours to {{ student.first_name }}'s official record.</p>
+
+    <form method="post" action="{% url 'approve_trip' trip.trip_id %}">
+        {% csrf_token %}
+
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 30px;">
+            <button type="submit" style="background-color: #4CAF50; flex: 1;">
+                ✓ Approve Session
+            </button>
+            <a href="{% url 'view_trip' trip.trip_id %}" style="display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1;">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -35,7 +35,7 @@
                         id="start_date"
                         name="start_date"
                         required
-                        value="{{ request.POST.start_date|default:today }}"
+                        value="{{ request.POST.start_date }}"
                         max="{{ today }}"
                     >
                 </div>
@@ -64,7 +64,7 @@
                         id="end_date"
                         name="end_date"
                         required
-                        value="{{ request.POST.end_date|default:today }}"
+                        value="{{ request.POST.end_date }}"
                         max="{{ today }}"
                     >
                 </div>
@@ -76,7 +76,7 @@
                         id="end_time"
                         name="end_time"
                         required
-                        value="{{ request.POST.end_time|default:'' }}"
+                        value="{{ request.POST.end_time }}"
                     >
                 </div>
             </div>

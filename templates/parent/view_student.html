@@ -64,7 +64,8 @@
 
     <!-- Driving Hours Summary -->
     <div class="hours-section" style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
-        <h2>Driving Hours Summary</h2>
+        <h2>Approved Driving Hours</h2>
+        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">Only approved sessions count toward official hours</p>
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
             <div style="text-align: center; padding: 15px; background-color: #f5f5f5; border-radius: 4px;">
                 <p style="margin: 0; color: #666; font-size: 0.9em;">Total Hours</p>
@@ -95,7 +96,7 @@
                 {% for trip in trips %}
                     <div style="border-bottom: 1px solid #eee; padding: 15px 0;">
                         <div style="display: flex; justify-content: space-between; align-items: start;">
-                            <div>
+                            <div style="flex-grow: 1;">
                                 <p style="margin: 0; font-weight: bold;">
                                     <a href="{% url 'view_trip' trip.trip_id %}" style="color: #4CAF50; text-decoration: none;">
                                         {{ trip.start_time|date:"M d, Y" }} - {{ trip.start_time|time:"g:i A" }}
@@ -115,11 +116,14 @@
                                     {% endif %}
                                 </p>
                             </div>
-                            <div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
                                 {% if trip.is_approved %}
-                                    <span style="color: #4CAF50;">✓ Approved</span>
+                                    <span style="color: #4CAF50; white-space: nowrap;">✓ Approved</span>
                                 {% else %}
-                                    <span style="color: #FF9800;">Pending</span>
+                                    <span style="color: #FF9800; white-space: nowrap;">⏳ Pending</span>
+                                    <a href="{% url 'approve_trip' trip.trip_id %}" style="display: inline-block; padding: 4px 12px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 3px; font-size: 0.9em; white-space: nowrap;">
+                                        Approve
+                                    </a>
                                 {% endif %}
                             </div>
                         </div>
