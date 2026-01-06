@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Trip In Progress - DMV+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'view_student' student.id %}" style="color: #4CAF50;">← Back to {{ student.first_name }}'s Profile</a>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="margin-bottom: 10px;">⏱️ Trip In Progress</h1>
+        <p style="color: #666; font-size: 1.1em;">{{ student.first_name }} {{ student.last_name }}</p>
+    </div>
+
+    <!-- Timer Display -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; border-radius: 12px; margin-bottom: 30px; text-align: center; color: white;">
+    <p style="margin: 0 0 10px 0; font-size: 1em; opacity: 0.9;">Elapsed Time</p>
+    <div id="timer" style="font-size: 3em; font-weight: bold; font-family: 'Courier New', monospace; margin: 20px 0;">
+        00:00:00
+    </div>
+    <p style="margin: 10px 0 0 0; font-size: 0.9em; opacity: 0.8;">
+        Started at {{ trip.start_time|time:"g:i A" }}
+    </p>
+    <!-- NEW: Minimum duration indicator -->
+    <div id="duration-status" style="margin-top: 15px; padding: 10px; background-color: rgba(255,255,255,0.2); border-radius: 4px; font-size: 0.9em;">
+        <span id="status-text">Minimum 5 minutes required</span>
+    </div>
+</div>
+
+    <!-- Safety Tips -->
+    <div style="padding: 15px; background-color: #e3f2fd; border-radius: 4px; margin-bottom: 30px; border-left: 4px solid #2196F3;">
+        <p style="margin: 0; color: #1976d2;">
+            <strong>🚗 Safety Reminder:</strong> Focus on safe driving. The timer will continue running until you stop it.
+        </p>
+    </div>
+
+    <!-- Stop Button -->
+    <form method="post" action="{% url 'stop_trip' trip.trip_id %}" style="text-align: center;">
+        {% csrf_token %}
+        <button type="submit" style="padding: 20px 40px; background-color: #f44336; color: white; border: none; border-radius: 8px; font-size: 1.3em; cursor: pointer; font-weight: bold;">
+            ⏹️ Stop Trip
+        </button>
+        <p style="margin-top: 15px; color: #666; font-size: 0.9em;">
+            Click to end the trip and record the driving time
+        </p>
+    </form>
+</div>
+
+<script>
+    const startTime = new Date("{{ trip.start_time|date:'c' }}").getTime();
+    const minimumMinutes = 5;
+
+    function updateTimer() {
+        const now = new Date().getTime();
+        const elapsed = now - startTime;
+
+        const hours = Math.floor(elapsed / (1000 * 60 * 60));
+        const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+
+        const hoursStr = String(hours).padStart(2, '0');
+        const minutesStr = String(minutes).padStart(2, '0');
+        const secondsStr = String(seconds).padStart(2, '0');
+
+        document.getElementById('timer').textContent = `${hoursStr}:${minutesStr}:${secondsStr}`;
+
+        // NEW: Update status indicator
+        const totalMinutes = Math.floor(elapsed / (1000 * 60));
+        const statusEl = document.getElementById('status-text');
+
+        if (totalMinutes < minimumMinutes) {
+            const remaining = minimumMinutes - totalMinutes;
+            statusEl.textContent = `⏳ ${remaining} more minute(s) until minimum`;
+            statusEl.style.color = '#ffeb3b';
+        } else {
+            statusEl.textContent = '✓ Minimum duration met - can stop anytime';
+            statusEl.style.color = '#4CAF50';
+        }
+    }
+
+    updateTimer();
+    setInterval(updateTimer, 1000);
+</script>
+{% endblock %}

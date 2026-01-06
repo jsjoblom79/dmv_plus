@@ -108,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Denver'
 
 USE_I18N = True
 
@@ -139,7 +139,7 @@ USER_TYPES = [
 from datetime import time
 NIGHT_START = time(20,0)
 NIGHT_END = time(5,0)
-
+MINIMUM_TRIP_DURATION = 5
 
 TOTAL_REQUIRED_HOURS = 60
 REQUIRED_DAY_HOURS = 50

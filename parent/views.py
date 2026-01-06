@@ -125,10 +125,16 @@ def view_student(request, student_id):
     # Get all trips for this student
     trips = Trip.objects.filter(student=student).order_by('-start_time')
 
-    # Calculate total hours
-    total_minutes = sum(trip.duration for trip in trips if trip.duration)
+    # Check for active trip (NEW)
+    active_trip = trips.filter(is_active=True).first()
+    has_active_trip = active_trip is not None
+    active_trip_id = active_trip.trip_id if active_trip else None
+
+    # Calculate total hours (only from approved, completed trips) - UPDATED
+    approved_completed_trips = trips.filter(is_approved=True, is_active=False)
+    total_minutes = sum(trip.duration for trip in approved_completed_trips if trip.duration)
     total_hours = total_minutes / 60
-    night_trips = trips.filter(is_night=True)
+    night_trips = approved_completed_trips.filter(is_night=True)
     night_minutes = sum(trip.duration for trip in night_trips if trip.duration)
     night_hours = night_minutes / 60
 
@@ -139,6 +145,8 @@ def view_student(request, student_id):
         'night_hours': round(night_hours, 2),
         'day_hours': round(total_hours - night_hours, 2),
         'trip_count': trips.count(),
+        'has_active_trip': has_active_trip,  # NEW
+        'active_trip_id': active_trip_id,    # NEW
     }
 
     return render(request, 'parent/view_student.html', context)
@@ -383,10 +391,13 @@ def approve_trip(request, trip_id):
 
     return render(request, 'parent/approve_trip.html', context)
 
+# Replace the existing edit_trip function in parent/views.py
+
+@login_required
 @login_required
 def edit_trip(request, trip_id):
     """
-    Edit an existing trip
+    Edit an existing trip (not allowed for active or approved trips)
     """
     if request.user.user_type != 'PARENT':
         raise PermissionDenied("Only parents can edit trips.")
@@ -402,6 +413,16 @@ def edit_trip(request, trip_id):
     # Verify parent owns this trip
     if trip.parent != parent_profile:
         raise PermissionDenied("You don't have permission to edit this trip.")
+
+    # Check if trip is active (NEW)
+    if trip.is_active:
+        messages.error(request, "Cannot edit an active trip. Please stop the trip first.")
+        return redirect('active_trip', trip_id=trip.trip_id)
+
+    # Check if trip is approved (NEW - add this if not already there)
+    if trip.is_approved:
+        messages.error(request, "Cannot edit an approved trip.")
+        return redirect('view_trip', trip_id=trip.trip_id)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -454,7 +475,7 @@ def edit_trip(request, trip_id):
 @login_required
 def delete_trip(request, trip_id):
     """
-    Delete a trip
+    Delete a trip (including active trips if under minimum duration)
     """
     if request.user.user_type != 'PARENT':
         raise PermissionDenied("Only parents can delete trips.")
@@ -473,6 +494,15 @@ def delete_trip(request, trip_id):
 
     student_id = trip.student.id
 
+    # NEW: Allow deletion of active trips (for cancellation)
+    if trip.is_active:
+        messages.warning(request, 'Active trip cancelled.')
+
+    # Prevent deletion of approved trips
+    if trip.is_approved:
+        messages.error(request, "Cannot delete an approved trip.")
+        return redirect('view_trip', trip_id=trip.trip_id)
+
     if request.method == 'POST':
         trip.delete()
         messages.success(request, 'Trip deleted successfully!')
@@ -484,3 +514,175 @@ def delete_trip(request, trip_id):
     }
 
     return render(request, 'parent/delete_trip.html', context)
+
+# ============================================
+# TIMER-BASED TRIP VIEWS (NEW)
+# ============================================
+
+@login_required
+def start_trip(request, student_id):
+    """
+    Start a new trip with timer
+    """
+    if request.user.user_type != 'PARENT':
+        raise PermissionDenied("Only parents can start trips.")
+
+    try:
+        parent_profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        messages.error(request, "Parent profile not found.")
+        return redirect('dashboard')
+
+    student = get_object_or_404(StudentProfile, id=student_id)
+
+    # Verify relationship
+    relationship = ParentStudentRelationship.objects.filter(
+        parent=parent_profile,
+        student=student
+    ).first()
+
+    if not relationship:
+        raise PermissionDenied("You don't have permission to log trips for this student.")
+
+    # Check if there's already an active trip for this student
+    active_trip = Trip.objects.filter(
+        student=student,
+        parent=parent_profile,
+        is_active=True
+    ).first()
+
+    if active_trip:
+        messages.info(request, 'There is already an active trip for this student.')
+        return redirect('active_trip', trip_id=active_trip.trip_id)
+
+    if request.method == 'POST':
+        try:
+            # Create new active trip
+            trip = Trip.objects.create(
+                parent=parent_profile,
+                student=student,
+                start_time=timezone.now(),
+                is_active=True
+            )
+
+            messages.success(request, f'Trip started for {student.first_name}!')
+            return redirect('active_trip', trip_id=trip.trip_id)
+
+        except Exception as e:
+            messages.error(request, f'Error starting trip: {str(e)}')
+            return redirect('view_student', student_id=student.id)
+
+    context = {
+        'student': student,
+        'today': timezone.now(),
+        'now': timezone.now(),
+    }
+
+    return render(request, 'parent/start_trip.html', context)
+
+
+@login_required
+def active_trip(request, trip_id):
+    """
+    Display active trip with timer
+    """
+    if request.user.user_type != 'PARENT':
+        raise PermissionDenied("Only parents can view trip details.")
+
+    try:
+        parent_profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        messages.error(request, "Parent profile not found.")
+        return redirect('dashboard')
+
+    trip = get_object_or_404(Trip, trip_id=trip_id)
+
+    # Verify parent owns this trip
+    if trip.parent != parent_profile:
+        raise PermissionDenied("You don't have permission to view this trip.")
+
+    # Verify trip is active
+    if not trip.is_active:
+        messages.info(request, 'This trip has already ended.')
+        return redirect('view_trip', trip_id=trip.trip_id)
+
+    context = {
+        'trip': trip,
+        'student': trip.student,
+    }
+
+    return render(request, 'parent/active_trip.html', context)
+
+
+@login_required
+def stop_trip(request, trip_id):
+    """
+    Stop an active trip (must be at least 5 minutes)
+    """
+    if request.user.user_type != 'PARENT':
+        raise PermissionDenied("Only parents can stop trips.")
+
+    try:
+        parent_profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        messages.error(request, "Parent profile not found.")
+        return redirect('dashboard')
+
+    trip = get_object_or_404(Trip, trip_id=trip_id)
+
+    # Verify parent owns this trip
+    if trip.parent != parent_profile:
+        raise PermissionDenied("You don't have permission to stop this trip.")
+
+    # Verify trip is active
+    if not trip.is_active:
+        messages.error(request, 'This trip is not active.')
+        return redirect('view_trip', trip_id=trip.trip_id)
+
+    if request.method == 'POST':
+        try:
+            # Calculate duration before stopping
+            end_time = timezone.now()
+            duration_seconds = (end_time - trip.start_time).total_seconds()
+            duration_minutes = int(duration_seconds / 60)
+
+            # NEW: Check minimum duration
+            from django.conf import settings
+            min_duration = getattr(settings, 'MINIMUM_TRIP_DURATION', 5)
+
+            if duration_minutes < min_duration:
+                messages.error(
+                    request,
+                    f'Trip must be at least {min_duration} minutes long. '
+                    f'Current duration: {duration_minutes} minute(s). '
+                    f'Please continue driving or cancel the trip.'
+                )
+                return redirect('active_trip', trip_id=trip.trip_id)
+
+            # Stop the trip
+            trip.end_time = end_time
+            trip.is_active = False
+            trip.save()
+
+            messages.success(request, f'Trip stopped! Duration: {trip.duration} minutes')
+            return redirect('view_trip', trip_id=trip.trip_id)
+
+        except Exception as e:
+            messages.error(request, f'Error stopping trip: {str(e)}')
+            return redirect('active_trip', trip_id=trip.trip_id)
+
+    # For GET request, calculate current duration for display
+    current_duration_seconds = (timezone.now() - trip.start_time).total_seconds()
+    current_duration_minutes = int(current_duration_seconds / 60)
+
+    from django.conf import settings
+    min_duration = getattr(settings, 'MINIMUM_TRIP_DURATION', 5)
+
+    context = {
+        'trip': trip,
+        'student': trip.student,
+        'current_duration_minutes': current_duration_minutes,  # NEW
+        'minimum_duration': min_duration,  # NEW
+    }
+
+    return render(request, 'parent/stop_trip.html', context)

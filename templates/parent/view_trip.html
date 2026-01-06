@@ -8,12 +8,13 @@
         <a href="{% url 'view_student' student.id %}" style="color: #4CAF50;">← Back to {{ student.first_name }}'s Profile</a>
     </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-        <div>
-            <h1 style="margin-bottom: 5px;">Trip Details</h1>
-            <p style="color: #666; margin: 0;">{{ student.first_name }} {{ student.last_name }}</p>
+    <div style="display: flex; justify-content: center; align-items: start; margin-bottom: 20px;">
+        <div style="flex-direction: row; justify-content: center; ">
+        <div style="width: 100%; justify-content: center;">
+            <h1 style="margin-bottom: 5px; text-align: center;">Trip Details</h1>
+            <p style="color: #666; margin-bottom: 5px; text-align: center;">{{ student.first_name }} {{ student.last_name }}</p>
         </div>
-        <div style="display: flex; gap: 10px;">
+        <div style="flex-direction: column; gap: 10px;">
             {% if not trip.is_approved %}
                 <a href="{% url 'approve_trip' trip.trip_id %}" style="display: inline-block; padding: 8px 16px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">
                     ✓ Approve
@@ -30,6 +31,7 @@
                 </span>
             {% endif %}
         </div>
+            </div>
     </div>
 
     {% if messages %}

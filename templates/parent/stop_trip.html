@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Stop Trip - DMV+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'active_trip' trip.trip_id %}" style="color: #4CAF50;">← Back to Active Trip</a>
+    </div>
+
+    <h1>Stop Driving Session</h1>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- NEW: Duration Check Warning -->
+    {% if current_duration_minutes < minimum_duration %}
+        <div class="message error" style="margin: 20px 0; background-color: #f8d7da; border-color: #f5c6cb; color: #721c24;">
+            <strong>⚠️ Warning:</strong> This trip is only {{ current_duration_minutes }} minute(s) long.
+            Trips must be at least {{ minimum_duration }} minutes to be saved.
+            Please continue driving or return to the trip timer.
+        </div>
+    {% else %}
+        <div class="message info" style="margin: 20px 0; background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460;">
+            <strong>✓ Ready to Stop:</strong> This trip is {{ current_duration_minutes }} minute(s) long and meets the minimum requirement.
+        </div>
+    {% endif %}
+
+    <div style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin: 20px 0; background-color: #f9f9f9;">
+        <h3>Trip Details</h3>
+        <p style="margin: 10px 0;"><strong>Student:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+        <p style="margin: 10px 0;"><strong>Start Time:</strong> {{ trip.start_time|date:"M d, Y" }} at {{ trip.start_time|time:"g:i A" }}</p>
+        <p style="margin: 10px 0;"><strong>Current Duration:</strong> {{ current_duration_minutes }} minute(s)</p>
+        <p style="margin: 10px 0;"><strong>Minimum Required:</strong> {{ minimum_duration }} minute(s)</p>
+    </div>
+
+    <form method="post" action="{% url 'stop_trip' trip.trip_id %}">
+        {% csrf_token %}
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 30px;">
+            {% if current_duration_minutes >= minimum_duration %}
+                <button type="submit" style="background-color: #4CAF50; flex: 1; font-weight: bold;">
+                    ✓ Stop Trip Now
+                </button>
+            {% else %}
+                <button type="submit" style="background-color: #f44336; flex: 1; font-weight: bold; opacity: 0.6; cursor: not-allowed;" disabled>
+                    ⏹️ Too Short ({{ current_duration_minutes }}/{{ minimum_duration }} min)
+                </button>
+            {% endif %}
+            <a href="{% url 'active_trip' trip.trip_id %}" style="display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1;">
+                Continue Trip
+            </a>
+        </div>
+    </form>
+
+    <!-- NEW: Option to cancel/delete trip if too short -->
+    {% if current_duration_minutes < minimum_duration %}
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
+            <p style="color: #666; margin-bottom: 10px;">Need to cancel this trip instead?</p>
+            <form method="post" action="{% url 'delete_trip' trip.trip_id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" style="padding: 8px 16px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="return confirm('Are you sure you want to cancel this trip? It will not be saved.');">
+                    🗑️ Cancel Trip
+                </button>
+            </form>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
