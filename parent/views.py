@@ -617,7 +617,7 @@ def active_trip(request, trip_id):
 @login_required
 def stop_trip(request, trip_id):
     """
-    Stop an active trip (must be at least 5 minutes)
+    Stop an active trip (must be at least 5 minutes) or cancel it
     """
     if request.user.user_type != 'PARENT':
         raise PermissionDenied("Only parents can stop trips.")
@@ -640,13 +640,21 @@ def stop_trip(request, trip_id):
         return redirect('view_trip', trip_id=trip.trip_id)
 
     if request.method == 'POST':
+        # Check if this is a cancel request
+        if request.POST.get('cancel_trip') == 'true':
+            student_id = trip.student.id
+            trip.delete()
+            messages.warning(request, 'Trip cancelled. No time was recorded.')
+            return redirect('view_student', student_id=student_id)
+
+        # Otherwise, try to stop the trip normally
         try:
             # Calculate duration before stopping
             end_time = timezone.now()
             duration_seconds = (end_time - trip.start_time).total_seconds()
             duration_minutes = int(duration_seconds / 60)
 
-            # NEW: Check minimum duration
+            # Check minimum duration
             from django.conf import settings
             min_duration = getattr(settings, 'MINIMUM_TRIP_DURATION', 5)
 
@@ -657,7 +665,7 @@ def stop_trip(request, trip_id):
                     f'Current duration: {duration_minutes} minute(s). '
                     f'Please continue driving or cancel the trip.'
                 )
-                return redirect('active_trip', trip_id=trip.trip_id)
+                return redirect('stop_trip', trip_id=trip.trip_id)
 
             # Stop the trip
             trip.end_time = end_time
@@ -681,8 +689,8 @@ def stop_trip(request, trip_id):
     context = {
         'trip': trip,
         'student': trip.student,
-        'current_duration_minutes': current_duration_minutes,  # NEW
-        'minimum_duration': min_duration,  # NEW
+        'current_duration_minutes': current_duration_minutes,
+        'minimum_duration': min_duration,
     }
 
     return render(request, 'parent/stop_trip.html', context)

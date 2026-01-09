@@ -59,17 +59,25 @@
         </div>
     </form>
 
-    <!-- NEW: Option to cancel/delete trip if too short -->
-    {% if current_duration_minutes < minimum_duration %}
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
-            <p style="color: #666; margin-bottom: 10px;">Need to cancel this trip instead?</p>
-            <form method="post" action="{% url 'delete_trip' trip.trip_id %}" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" style="padding: 8px 16px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="return confirm('Are you sure you want to cancel this trip? It will not be saved.');">
+    <form method="post" action="{% url 'stop_trip' trip.trip_id %}">
+        {% csrf_token %}
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 30px;">
+            {% if current_duration_minutes >= minimum_duration %}
+                <button type="submit" style="background-color: #4CAF50; flex: 1; font-weight: bold;">
+                    ✓ Stop Trip Now
+                </button>
+                <a href="{% url 'active_trip' trip.trip_id %}" style="display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1;">
+                    Continue Trip
+                </a>
+            {% else %}
+                <a href="{% url 'active_trip' trip.trip_id %}" style="display: inline-block; padding: 10px 20px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1; font-weight: bold;">
+                    ← Continue Driving
+                </a>
+                <button type="submit" name="cancel_trip" value="true" style="background-color: #f44336; flex: 1; font-weight: bold;" onclick="return confirm('Cancel this trip? It will not be saved and all time will be lost.');">
                     🗑️ Cancel Trip
                 </button>
-            </form>
+            {% endif %}
         </div>
-    {% endif %}
+    </form>
 </div>
 {% endblock %}

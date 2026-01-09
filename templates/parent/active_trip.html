@@ -46,15 +46,27 @@
     </div>
 
     <!-- Stop Button -->
-    <form method="post" action="{% url 'stop_trip' trip.trip_id %}" style="text-align: center;">
-        {% csrf_token %}
-        <button type="submit" style="padding: 20px 40px; background-color: #f44336; color: white; border: none; border-radius: 8px; font-size: 1.3em; cursor: pointer; font-weight: bold;">
-            ⏹️ Stop Trip
-        </button>
+    <div style="text-align: center;">
+        <form method="post" action="{% url 'stop_trip' trip.trip_id %}" style="display: inline-block; margin-right: 10px;">
+            {% csrf_token %}
+            <button type="submit" style="padding: 20px 40px; background-color: #f44336; color: white; border: none; border-radius: 8px; font-size: 1.3em; cursor: pointer; font-weight: bold;">
+                ⏹️ Stop Trip
+            </button>
+        </form>
+
+        <form method="post" action="{% url 'stop_trip' trip.trip_id %}" style="display: inline-block;">
+            {% csrf_token %}
+            <input type="hidden" name="cancel_trip" value="true">
+            <button type="submit" style="padding: 20px 40px; background-color: #666; color: white; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer;" onclick="return confirm('Cancel this trip? All time will be lost and the trip will not be saved.');">
+                🗑️ Cancel Trip
+            </button>
+        </form>
+
         <p style="margin-top: 15px; color: #666; font-size: 0.9em;">
-            Click to end the trip and record the driving time
+            Stop: End and save the trip (requires 5+ minutes)<br>
+            Cancel: Discard the trip without saving
         </p>
-    </form>
+    </div>
 </div>
 
 <script>
