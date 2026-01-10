@@ -58,6 +58,12 @@
             color: #0c5460;
         }
 
+        .message.warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+
         /* Forms */
         form {
             margin-top: 20px;
@@ -149,6 +155,9 @@
             color: white;
             padding: 10px 20px;
             margin: -20px -20px 20px -20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         nav a {
@@ -157,7 +166,22 @@
         }
 
         nav .user-info {
-            float: right;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #4CAF50;
+            cursor: pointer;
+        }
+
+        .user-photo:hover {
+            border-color: #45a049;
         }
     </style>
 </head>
@@ -166,7 +190,20 @@
     <nav>
         <span>DMV+</span>
         <div class="user-info">
-            <span>{{ user.get_full_name|default:user.email }}</span>
+            {% if user.user_type == 'PARENT' %}
+                {% load static %}
+                <a href="{% url 'edit_parent_profile' %}" title="Edit Profile">
+                    <img
+                        src="{% if user.parentprofile.photo %}{{ user.parentprofile.photo.url }}{% else %}/static/images/default_user.png{% endif %}"
+                        alt="{{ user.get_full_name }}"
+                        class="user-photo"
+                        onerror="this.src='/static/images/default_user.png'"
+                    >
+                </a>
+                <span>{{ user.get_full_name|default:user.email }}</span>
+            {% else %}
+                <span>{{ user.get_full_name|default:user.email }}</span>
+            {% endif %}
             <a href="{% url 'logout' %}">Logout</a>
         </div>
     </nav>

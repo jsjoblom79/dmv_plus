@@ -48,6 +48,98 @@ def parent_dashboard(request):
 
 
 @login_required
+def edit_parent_profile(request):
+    """
+    Edit parent profile information including photo
+    """
+    if request.user.user_type != 'PARENT':
+        raise PermissionDenied("Only parents can edit their profile.")
+
+    try:
+        parent_profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        messages.error(request, "Parent profile not found.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        # Update user information
+        request.user.first_name = request.POST.get('first_name')
+        request.user.last_name = request.POST.get('last_name')
+        request.user.email = request.POST.get('email')
+
+        # Update profile information
+        parent_profile.phone = request.POST.get('phone', '')
+        parent_profile.address1 = request.POST.get('address1', '')
+        parent_profile.address2 = request.POST.get('address2', '')
+        parent_profile.city = request.POST.get('city', '')
+        parent_profile.state = request.POST.get('state', '')
+        parent_profile.zipcode = request.POST.get('zipcode', '')
+
+        # Handle photo upload
+        if 'photo' in request.FILES:
+            from core.services.photo_utils import validate_photo, process_profile_photo
+
+            photo = request.FILES['photo']
+            is_valid, error_message = validate_photo(photo)
+
+            if not is_valid:
+                messages.error(request, error_message)
+                return render(request, 'parent/edit_profile.html', {
+                    'parent_profile': parent_profile
+                })
+
+            # Get rotation value
+            rotation = int(request.POST.get('rotation', 0))
+
+            # Process the photo
+            try:
+                processed_photo = process_profile_photo(photo, rotation)
+
+                # Delete old photo if exists
+                if parent_profile.photo:
+                    parent_profile.photo.delete(save=False)
+
+                parent_profile.photo = processed_photo
+            except Exception as e:
+                messages.error(request, f'Error processing image: {str(e)}')
+                return render(request, 'parent/edit_profile.html', {
+                    'parent_profile': parent_profile
+                })
+
+        # Handle photo removal
+        if request.POST.get('remove_photo') == 'true':
+            if parent_profile.photo:
+                parent_profile.photo.delete(save=False)
+                parent_profile.photo = None
+
+        # Validation
+        if not request.user.first_name or not request.user.last_name:
+            messages.error(request, 'First name and last name are required.')
+            return render(request, 'parent/edit_profile.html', {
+                'parent_profile': parent_profile
+            })
+
+        if not request.user.email:
+            messages.error(request, 'Email is required.')
+            return render(request, 'parent/edit_profile.html', {
+                'parent_profile': parent_profile
+            })
+
+        try:
+            request.user.save()
+            parent_profile.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('parent_dashboard')
+        except Exception as e:
+            messages.error(request, f'Error updating profile: {str(e)}')
+
+    context = {
+        'parent_profile': parent_profile,
+    }
+
+    return render(request, 'parent/edit_profile.html', context)
+
+@login_required
 def add_student(request):
     """
     Add a new student profile
@@ -155,7 +247,7 @@ def view_student(request, student_id):
 @login_required
 def edit_student(request, student_id):
     """
-    Edit student information
+    Edit student information including photo
     """
     if request.user.user_type != 'PARENT':
         raise PermissionDenied("Only parents can edit student information.")
@@ -182,6 +274,39 @@ def edit_student(request, student_id):
         student.last_name = request.POST.get('last_name')
         student.permit_number = request.POST.get('permit_number', '')
         student.drivers_ed_completed = request.POST.get('drivers_ed_completed') == 'on'
+
+        # Handle photo upload
+        if 'photo' in request.FILES:
+            from core.services.photo_utils import validate_photo, process_profile_photo
+
+            photo = request.FILES['photo']
+            is_valid, error_message = validate_photo(photo)
+
+            if not is_valid:
+                messages.error(request, error_message)
+                return render(request, 'parent/edit_student.html', {'student': student})
+
+            # Get rotation value
+            rotation = int(request.POST.get('rotation', 0))
+
+            # Process the photo
+            try:
+                processed_photo = process_profile_photo(photo, rotation)
+
+                # Delete old photo if exists
+                if student.photo:
+                    student.photo.delete(save=False)
+
+                student.photo = processed_photo
+            except Exception as e:
+                messages.error(request, f'Error processing image: {str(e)}')
+                return render(request, 'parent/edit_student.html', {'student': student})
+
+        # Handle photo removal
+        if request.POST.get('remove_photo') == 'true':
+            if student.photo:
+                student.photo.delete(save=False)
+                student.photo = None
 
         if not student.first_name or not student.last_name:
             messages.error(request, 'First name and last name are required.')

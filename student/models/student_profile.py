@@ -9,7 +9,7 @@ class StudentProfile(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     permit_number = models.CharField(max_length=20, blank=True)
-
+    photo = models.ImageField(upload_to="profile_photos/students/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     drivers_ed_date_completed = models.DateTimeField(blank=True, null=True)
@@ -19,3 +19,9 @@ class StudentProfile(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} - Permit Number: {self.permit_number}"
+
+    def get_photo_url(self):
+        ''' Returns the photo url or default image '''
+        if self.photo:
+            return self.photo.url
+        return '/static/images/default_user.png'

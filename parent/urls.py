@@ -3,6 +3,7 @@ from parent import views
 
 urlpatterns = [
     path('dashboard/', views.parent_dashboard, name='parent_dashboard'),
+    path('profile/edit/', views.edit_parent_profile, name='edit_parent_profile'),
     path('student/add/', views.add_student, name='add_student'),
     path('student/<int:student_id>/', views.view_student, name='view_student'),
     path('student/<int:student_id>/edit/', views.edit_student, name='edit_student'),
