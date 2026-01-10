@@ -8,6 +8,7 @@ urlpatterns = [
     path('student/<int:student_id>/', views.view_student, name='view_student'),
     path('student/<int:student_id>/edit/', views.edit_student, name='edit_student'),
     path('student/<int:student_id>/delete/', views.delete_student, name='delete_student'),
+    path('student/<int:student_id>/export-pdf/', views.export_student_hours_pdf, name='export_student_hours_pdf'),
 
     # Manual Trip management
     path('student/<int:student_id>/log-trip/', views.log_trip, name='log_trip'),

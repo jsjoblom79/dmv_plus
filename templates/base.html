@@ -188,7 +188,7 @@
 <body>
     {% if user.is_authenticated %}
     <nav>
-        <span>DMV+</span>
+        <span>DMV+   Drive, Manage, Verify</span>
         <div class="user-info">
             {% if user.user_type == 'PARENT' %}
                 {% load static %}
@@ -200,7 +200,7 @@
                         onerror="this.src='/static/images/default_user.png'"
                     >
                 </a>
-                <span>{{ user.get_full_name|default:user.email }}</span>
+<!--                <span>{{ user.get_full_name|default:user.email }}</span>-->
             {% else %}
                 <span>{{ user.get_full_name|default:user.email }}</span>
             {% endif %}

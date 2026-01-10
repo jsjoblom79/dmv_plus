@@ -8,7 +8,8 @@ from parent.models.parent_profile import ParentProfile
 from parent.models.parent_student_relationship import ParentStudentRelationship
 from student.models.student_profile import StudentProfile
 from student.models.driving_sessions import Trip
-
+from django.http import HttpResponse
+from student.services.pdf_export_service import generate_driving_hours_pdf
 
 @login_required
 def parent_dashboard(request):
@@ -363,6 +364,59 @@ def delete_student(request, student_id):
 
     return render(request, 'parent/delete_student.html', context)
 
+
+@login_required
+def export_student_hours_pdf(request, student_id):
+    """
+    Export student driving hours as PDF for DMV submission
+    """
+    if request.user.user_type != 'PARENT':
+        raise PermissionDenied("Only parents can export student reports.")
+
+    try:
+        parent_profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        messages.error(request, "Parent profile not found.")
+        return redirect('dashboard')
+
+    student = get_object_or_404(StudentProfile, id=student_id)
+
+    # Verify relationship
+    relationship = ParentStudentRelationship.objects.filter(
+        parent=parent_profile,
+        student=student
+    ).first()
+
+    if not relationship:
+        raise PermissionDenied("You don't have permission to export this student's report.")
+
+    # Get only approved trips (these are the official hours)
+    trips = Trip.objects.filter(
+        student=student,
+        is_approved=True,
+        is_active=False
+    ).order_by('start_time')
+
+    if not trips.exists():
+        messages.warning(request,
+                         f"No approved driving sessions found for {student.first_name}. Approve some trips first.")
+        return redirect('view_student', student_id=student.id)
+
+    # Generate PDF
+    try:
+        pdf = generate_driving_hours_pdf(student, trips, parent_profile)
+
+        # Create the response
+        response = HttpResponse(content_type='application/pdf')
+        response[
+            'Content-Disposition'] = f'attachment; filename="driving_hours_{student.first_name}_{student.last_name}.pdf"'
+        response.write(pdf)
+
+        return response
+
+    except Exception as e:
+        messages.error(request, f'Error generating PDF: {str(e)}')
+        return redirect('view_student', student_id=student.id)
 
 # ============================================
 # TRIP LOGGING VIEWS
