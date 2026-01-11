@@ -10,6 +10,12 @@ urlpatterns = [
     path('student/<int:student_id>/delete/', views.delete_student, name='delete_student'),
     path('student/<int:student_id>/export-pdf/', views.export_student_hours_pdf, name='export_student_hours_pdf'),
 
+    # Parent Invitation URLs
+    path('student/<int:student_id>/invite-parent/', views.invite_parent, name='invite_parent'),
+    path('student/<int:student_id>/invitations/', views.view_invitations, name='view_invitations'),
+    path('invitation/<uuid:invitation_id>/cancel/', views.cancel_invitation, name='cancel_invitation'),
+    path('invitation/accept/<uuid:token>/', views.accept_invitation, name='accept_invitation'),
+
     # Manual Trip management
     path('student/<int:student_id>/log-trip/', views.log_trip, name='log_trip'),
     # Timer Trip management
@@ -22,5 +28,4 @@ urlpatterns = [
     path('trip<uuid:trip_id>/approve/', views.approve_trip, name='approve_trip'),
     path('trip/<uuid:trip_id>/edit/', views.edit_trip, name='edit_trip'),
     path('trip/<uuid:trip_id>/delete/', views.delete_trip, name='delete_trip'),
-
 ]

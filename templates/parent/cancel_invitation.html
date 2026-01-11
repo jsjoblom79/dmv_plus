@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancel Invitation - DMV+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'view_invitations' invitation.student.id %}" style="color: #4CAF50;">← Back to Invitations</a>
+    </div>
+
+    <h1>Cancel Invitation</h1>
+
+    <div class="message warning" style="margin: 20px 0;">
+        <strong>⚠️ Warning:</strong> Are you sure you want to cancel this invitation?
+    </div>
+
+    <div style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin: 20px 0;">
+        <h3>Invitation Details</h3>
+        <p style="margin: 10px 0;"><strong>Student:</strong> {{ invitation.student.first_name }} {{ invitation.student.last_name }}</p>
+        <p style="margin: 10px 0;"><strong>Invited Email:</strong> {{ invitation.invited_email }}</p>
+        {% if invitation.invited_first_name or invitation.invited_last_name %}
+            <p style="margin: 10px 0;"><strong>Name:</strong> {{ invitation.invited_first_name }} {{ invitation.invited_last_name }}</p>
+        {% endif %}
+        <p style="margin: 10px 0;"><strong>Sent On:</strong> {{ invitation.created_at|date:"M d, Y" }} at {{ invitation.created_at|time:"g:i A" }}</p>
+        <p style="margin: 10px 0;"><strong>Expires On:</strong> {{ invitation.expires_at|date:"M d, Y" }} at {{ invitation.expires_at|time:"g:i A" }}</p>
+        <p style="margin: 10px 0;"><strong>Status:</strong> {{ invitation.status }}</p>
+
+        {% if invitation.message %}
+            <div style="margin-top: 15px; padding: 10px; background-color: #f5f5f5; border-radius: 4px;">
+                <p style="margin: 0; color: #666; font-size: 0.9em;"><strong>Personal Message:</strong></p>
+                <p style="margin: 5px 0 0 0; color: #333; font-style: italic;">"{{ invitation.message }}"</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <p>Once cancelled, the invitation link will no longer work and {{ invitation.invited_email }} will not be able to accept it.</p>
+
+    <form method="post" action="{% url 'cancel_invitation' invitation.invitation_id %}">
+        {% csrf_token %}
+
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 30px;">
+            <button type="submit" style="background-color: #f44336; flex: 1;">
+                Yes, Cancel Invitation
+            </button>
+            <a href="{% url 'view_invitations' invitation.student.id %}" style="display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1;">
+                Keep Invitation
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

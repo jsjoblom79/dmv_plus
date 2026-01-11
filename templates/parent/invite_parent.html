@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Invite Parent/Guardian - DMV+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px;">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'view_student' student.id %}" style="color: #4CAF50;">← Back to {{ student.first_name }}'s Profile</a>
+    </div>
+
+    <h1>Invite Parent/Guardian</h1>
+    <p>Invite another parent or guardian to help track driving hours for {{ student.first_name }} {{ student.last_name }}.</p>
+
+    <div style="padding: 15px; background-color: #e3f2fd; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2196F3;">
+        <p style="margin: 0; color: #1976d2;">
+            <strong>ℹ️ How It Works:</strong>
+        </p>
+        <ul style="color: #1976d2; margin: 10px 0 0 0; padding-left: 20px;">
+            <li style="margin: 5px 0;">They'll receive an email invitation with a unique link</li>
+            <li style="margin: 5px 0;">They can create a new account or link their existing one</li>
+            <li style="margin: 5px 0;">Once accepted, they'll have full access to log trips, approve hours, and view progress</li>
+            <li style="margin: 5px 0;">Invitations expire after 7 days</li>
+        </ul>
+    </div>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'invite_parent' student.id %}">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="invited_email">Email Address: *</label>
+            <input
+                type="email"
+                id="invited_email"
+                name="invited_email"
+                required
+                placeholder="parent@example.com"
+                value="{{ request.POST.invited_email|default:'' }}"
+            >
+            <small>They'll receive the invitation at this email address</small>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="invited_first_name">First Name:</label>
+                <input
+                    type="text"
+                    id="invited_first_name"
+                    name="invited_first_name"
+                    placeholder="Optional"
+                    value="{{ request.POST.invited_first_name|default:'' }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="invited_last_name">Last Name:</label>
+                <input
+                    type="text"
+                    id="invited_last_name"
+                    name="invited_last_name"
+                    placeholder="Optional"
+                    value="{{ request.POST.invited_last_name|default:'' }}"
+                >
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="message">Personal Message (Optional):</label>
+            <textarea
+                id="message"
+                name="message"
+                rows="4"
+                placeholder="Add a personal message to include in the invitation email..."
+                style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; font-family: Arial, sans-serif;"
+            >{{ request.POST.message|default:'' }}</textarea>
+            <small>This message will be included in the invitation email</small>
+        </div>
+
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 30px;">
+            <button type="submit" class="btn-primary">📧 Send Invitation</button>
+            <a href="{% url 'view_student' student.id %}" style="display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; text-align: center; flex: 1;">
+                Cancel
+            </a>
+        </div>
+    </form>
+
+    <div style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 4px;">
+        <p style="margin: 0; color: #666; font-size: 0.9em;">
+            <strong>Note:</strong> The invited parent will have the same permissions as you - they can log trips, approve hours, edit student information, and invite other parents.
+        </p>
+    </div>
+</div>
+{% endblock %}

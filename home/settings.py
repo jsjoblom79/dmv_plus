@@ -167,3 +167,23 @@ LOGOUT_REDIRECT_URL = 'login'
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+
+# Email Configuration
+# For development, use console backend to print emails to console
+# For production, configure with your email provider (Gmail, SendGrid, etc.)
+
+# Development - prints emails to console
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Production example (uncomment and configure for production):
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'your-email@gmail.com'
+# EMAIL_HOST_PASSWORD = 'your-app-password'
+# DEFAULT_FROM_EMAIL = 'DMV+ <noreply@dmvplus.com>'
+
+# For now, set a default for development
+DEFAULT_FROM_EMAIL = 'DMV+ <noreply@dmvplus.com>'

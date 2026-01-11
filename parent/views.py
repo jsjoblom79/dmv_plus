@@ -10,6 +10,11 @@ from student.models.student_profile import StudentProfile
 from student.models.driving_sessions import Trip
 from django.http import HttpResponse
 from student.services.pdf_export_service import generate_driving_hours_pdf
+from parent.models.parent_invitation import ParentInvitation
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.sites.shortcuts import get_current_site
+from django.urls import reverse
 
 @login_required
 def parent_dashboard(request):
@@ -417,6 +422,403 @@ def export_student_hours_pdf(request, student_id):
     except Exception as e:
         messages.error(request, f'Error generating PDF: {str(e)}')
         return redirect('view_student', student_id=student.id)
+
+
+# ============================================
+# PARENT INVITATION VIEWS
+# ============================================
+
+@login_required
+def invite_parent(request, student_id):
+    """
+    Send an invitation to another parent/guardian to access a student
+    """
+    if request.user.user_type != 'PARENT':
+        raise PermissionDenied("Only parents can invite other parents.")
+
+    try:
+        parent_profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        messages.error(request, "Parent profile not found.")
+        return redirect('dashboard')
+
+    student = get_object_or_404(StudentProfile, id=student_id)
+
+    # Verify relationship
+    relationship = ParentStudentRelationship.objects.filter(
+        parent=parent_profile,
+        student=student
+    ).first()
+
+    if not relationship:
+        raise PermissionDenied("You don't have permission to invite parents for this student.")
+
+    if request.method == 'POST':
+        invited_email = request.POST.get('invited_email', '').strip().lower()
+        invited_first_name = request.POST.get('invited_first_name', '').strip()
+        invited_last_name = request.POST.get('invited_last_name', '').strip()
+        message = request.POST.get('message', '').strip()
+
+        # Validation
+        if not invited_email:
+            messages.error(request, 'Email address is required.')
+            return render(request, 'parent/invite_parent.html', {'student': student})
+
+        # Check if inviting self
+        if invited_email == request.user.email:
+            messages.error(request, 'You cannot invite yourself.')
+            return render(request, 'parent/invite_parent.html', {'student': student})
+
+        # Check if this email already has access to this student
+        from core.models.custom_user import AccountUser
+        existing_user = AccountUser.objects.filter(email=invited_email).first()
+        if existing_user and existing_user.user_type == 'PARENT':
+            try:
+                existing_parent = ParentProfile.objects.get(user=existing_user)
+                if ParentStudentRelationship.objects.filter(
+                        parent=existing_parent,
+                        student=student
+                ).exists():
+                    messages.error(request, f'{invited_email} already has access to this student.')
+                    return render(request, 'parent/invite_parent.html', {'student': student})
+            except ParentProfile.DoesNotExist:
+                pass
+
+        # Check for existing pending invitation
+        existing_invitation = ParentInvitation.objects.filter(
+            student=student,
+            invited_email=invited_email,
+            status='PENDING'
+        ).first()
+
+        if existing_invitation:
+            if not existing_invitation.is_expired():
+                messages.warning(request,
+                                 f'An invitation to {invited_email} is already pending. '
+                                 f'Expires on {existing_invitation.expires_at.strftime("%B %d, %Y")}.')
+                return redirect('view_student', student_id=student.id)
+            else:
+                # Mark old invitation as expired
+                existing_invitation.mark_expired()
+
+        try:
+            # Create invitation
+            invitation = ParentInvitation.objects.create(
+                inviter=parent_profile,
+                student=student,
+                invited_email=invited_email,
+                invited_first_name=invited_first_name,
+                invited_last_name=invited_last_name,
+                message=message
+            )
+
+            # Send invitation email
+            current_site = get_current_site(request)
+            invitation_url = request.build_absolute_uri(
+                reverse('accept_invitation', kwargs={'token': invitation.token})
+            )
+
+            subject = f"You've been invited to help track {student.first_name}'s driving hours"
+
+            email_message = f"""Hello{' ' + invited_first_name if invited_first_name else ''},
+
+{request.user.get_full_name()} has invited you to help track driving hours for {student.first_name} {student.last_name} on DMV+.
+
+"""
+            if message:
+                email_message += f"Personal message from {request.user.get_full_name()}:\n\"{message}\"\n\n"
+
+            email_message += f"""To accept this invitation and create your account (or link to your existing account), click the link below:
+
+{invitation_url}
+
+This invitation will expire on {invitation.expires_at.strftime('%B %d, %Y at %I:%M %p')}.
+
+Once you accept, you'll be able to:
+- Log driving sessions for {student.first_name}
+- Approve driving hours
+- View {student.first_name}'s progress
+- Export reports for the DMV
+
+---
+DMV+ - Drive, Manage, Verify
+This is an automated message. Please do not reply to this email.
+"""
+
+            send_mail(
+                subject,
+                email_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [invited_email],
+                fail_silently=False,
+            )
+
+            messages.success(request,
+                             f'Invitation sent to {invited_email}! They will receive an email with instructions.')
+            return redirect('view_student', student_id=student.id)
+
+        except Exception as e:
+            messages.error(request, f'Error sending invitation: {str(e)}')
+            return render(request, 'parent/invite_parent.html', {'student': student})
+
+    context = {
+        'student': student,
+    }
+
+    return render(request, 'parent/invite_parent.html', context)
+
+
+@login_required
+def view_invitations(request, student_id):
+    """
+    View all invitations for a student
+    """
+    if request.user.user_type != 'PARENT':
+        raise PermissionDenied("Only parents can view invitations.")
+
+    try:
+        parent_profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        messages.error(request, "Parent profile not found.")
+        return redirect('dashboard')
+
+    student = get_object_or_404(StudentProfile, id=student_id)
+
+    # Verify relationship
+    relationship = ParentStudentRelationship.objects.filter(
+        parent=parent_profile,
+        student=student
+    ).first()
+
+    if not relationship:
+        raise PermissionDenied("You don't have permission to view invitations for this student.")
+
+    # Get all invitations for this student
+    invitations = ParentInvitation.objects.filter(
+        student=student
+    ).select_related('inviter__user', 'accepted_by__user')
+
+    # Mark expired invitations
+    for invitation in invitations:
+        if invitation.status == 'PENDING':
+            invitation.mark_expired()
+
+    context = {
+        'student': student,
+        'invitations': invitations,
+    }
+
+    return render(request, 'parent/view_invitations.html', context)
+
+
+@login_required
+def cancel_invitation(request, invitation_id):
+    """
+    Cancel a pending invitation
+    """
+    if request.user.user_type != 'PARENT':
+        raise PermissionDenied("Only parents can cancel invitations.")
+
+    try:
+        parent_profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        messages.error(request, "Parent profile not found.")
+        return redirect('dashboard')
+
+    invitation = get_object_or_404(ParentInvitation, invitation_id=invitation_id)
+
+    # Verify the current user is the inviter
+    if invitation.inviter != parent_profile:
+        raise PermissionDenied("You don't have permission to cancel this invitation.")
+
+    if request.method == 'POST':
+        if invitation.cancel():
+            messages.success(request, 'Invitation cancelled successfully.')
+        else:
+            messages.warning(request, 'Invitation could not be cancelled (may already be accepted or expired).')
+
+        return redirect('view_invitations', student_id=invitation.student.id)
+
+    context = {
+        'invitation': invitation,
+    }
+
+    return render(request, 'parent/cancel_invitation.html', context)
+
+
+def accept_invitation(request, token):
+    """
+    Accept an invitation (creates account if needed or links existing account)
+    """
+    invitation = get_object_or_404(ParentInvitation, token=token)
+
+    # Check if invitation is valid
+    if invitation.status != 'PENDING':
+        messages.error(request, f'This invitation is {invitation.status.lower()} and cannot be accepted.')
+        return redirect('login')
+
+    if invitation.is_expired():
+        invitation.mark_expired()
+        messages.error(request, 'This invitation has expired. Please ask for a new invitation.')
+        return redirect('login')
+
+    # If user is already logged in as a parent
+    if request.user.is_authenticated and request.user.user_type == 'PARENT':
+        try:
+            parent_profile = ParentProfile.objects.get(user=request.user)
+
+            # Check if they already have access
+            if ParentStudentRelationship.objects.filter(
+                    parent=parent_profile,
+                    student=invitation.student
+            ).exists():
+                messages.info(request, 'You already have access to this student.')
+                return redirect('view_student', student_id=invitation.student.id)
+
+            # Accept invitation and create relationship
+            invitation.accept(parent_profile)
+            ParentStudentRelationship.objects.create(
+                parent=parent_profile,
+                student=invitation.student
+            )
+
+            messages.success(request,
+                             f'Invitation accepted! You now have access to {invitation.student.first_name}\'s profile.')
+            return redirect('view_student', student_id=invitation.student.id)
+
+        except ParentProfile.DoesNotExist:
+            messages.error(request, "Parent profile not found.")
+            return redirect('dashboard')
+
+    # If not logged in, show registration/login page
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'login':
+            # Handle login
+            email = request.POST.get('email')
+            password = request.POST.get('password')
+
+            if not email or not password:
+                messages.error(request, 'Please provide both email and password.')
+                return render(request, 'parent/accept_invitation.html', {
+                    'invitation': invitation,
+                })
+
+            user = authenticate(request, username=email, password=password)
+
+            if user is not None:
+                if user.user_type != 'PARENT':
+                    messages.error(request, 'Only parent accounts can accept parent invitations.')
+                    return render(request, 'parent/accept_invitation.html', {
+                        'invitation': invitation,
+                    })
+
+                login(request, user)
+
+                try:
+                    parent_profile = ParentProfile.objects.get(user=user)
+
+                    # Check if they already have access
+                    if ParentStudentRelationship.objects.filter(
+                            parent=parent_profile,
+                            student=invitation.student
+                    ).exists():
+                        messages.info(request, 'You already have access to this student.')
+                        return redirect('view_student', student_id=invitation.student.id)
+
+                    # Accept invitation and create relationship
+                    invitation.accept(parent_profile)
+                    ParentStudentRelationship.objects.create(
+                        parent=parent_profile,
+                        student=invitation.student
+                    )
+
+                    messages.success(request,
+                                     f'Welcome back! You now have access to {invitation.student.first_name}\'s profile.')
+                    return redirect('view_student', student_id=invitation.student.id)
+
+                except ParentProfile.DoesNotExist:
+                    messages.error(request, "Parent profile not found.")
+                    return redirect('dashboard')
+            else:
+                messages.error(request, 'Invalid email or password.')
+                return render(request, 'parent/accept_invitation.html', {
+                    'invitation': invitation,
+                })
+
+        elif action == 'register':
+            # Handle registration
+            email = request.POST.get('email')
+            password = request.POST.get('password')
+            password_confirm = request.POST.get('password_confirm')
+            first_name = request.POST.get('first_name')
+            last_name = request.POST.get('last_name')
+
+            # Validation
+            if not all([email, password, password_confirm, first_name, last_name]):
+                messages.error(request, 'All fields are required.')
+                return render(request, 'parent/accept_invitation.html', {
+                    'invitation': invitation,
+                })
+
+            if password != password_confirm:
+                messages.error(request, 'Passwords do not match.')
+                return render(request, 'parent/accept_invitation.html', {
+                    'invitation': invitation,
+                })
+
+            if len(password) < 8:
+                messages.error(request, 'Password must be at least 8 characters.')
+                return render(request, 'parent/accept_invitation.html', {
+                    'invitation': invitation,
+                })
+
+            from core.models.custom_user import AccountUser
+            if AccountUser.objects.filter(email=email).exists():
+                messages.error(request, 'Email already registered. Please login instead.')
+                return render(request, 'parent/accept_invitation.html', {
+                    'invitation': invitation,
+                })
+
+            # Create user
+            try:
+                user = AccountUser.objects.create_user(
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    user_type='PARENT'
+                )
+
+                # Log the user in
+                login(request, user)
+
+                # Get the auto-created parent profile
+                parent_profile = ParentProfile.objects.get(user=user)
+
+                # Accept invitation and create relationship
+                invitation.accept(parent_profile)
+                ParentStudentRelationship.objects.create(
+                    parent=parent_profile,
+                    student=invitation.student
+                )
+
+                messages.success(request,
+                                 f'Account created successfully! You now have access to {invitation.student.first_name}\'s profile.')
+                return redirect('view_student', student_id=invitation.student.id)
+
+            except Exception as e:
+                messages.error(request, f'Error creating account: {str(e)}')
+                return render(request, 'parent/accept_invitation.html', {
+                    'invitation': invitation,
+                })
+
+    context = {
+        'invitation': invitation,
+    }
+
+    return render(request, 'parent/accept_invitation.html', context)
 
 # ============================================
 # TRIP LOGGING VIEWS

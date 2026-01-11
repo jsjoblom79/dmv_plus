@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block title %}Accept Invitation - DMV+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px;">
+    <h1>You're Invited!</h1>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div style="padding: 20px; background-color: #f9f9f9; border-radius: 4px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+        <p style="margin: 0 0 10px 0; font-size: 1.1em; color: #333;">
+            <strong>{{ invitation.inviter.user.get_full_name }}</strong> has invited you to help track driving hours for:
+        </p>
+        <p style="margin: 0; font-size: 1.3em; color: #4CAF50; font-weight: bold;">
+            {{ invitation.student.first_name }} {{ invitation.student.last_name }}
+        </p>
+
+        {% if invitation.message %}
+            <div style="margin-top: 15px; padding: 10px; background-color: white; border-radius: 4px;">
+                <p style="margin: 0; color: #666; font-size: 0.9em;"><strong>Personal Message:</strong></p>
+                <p style="margin: 5px 0 0 0; color: #333; font-style: italic;">"{{ invitation.message }}"</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div style="padding: 15px; background-color: #e3f2fd; border-radius: 4px; margin-bottom: 20px;">
+        <p style="margin: 0; color: #1976d2;">
+            <strong>What You'll Be Able To Do:</strong>
+        </p>
+        <ul style="color: #1976d2; margin: 10px 0 0 0; padding-left: 20px;">
+            <li style="margin: 5px 0;">Log driving sessions for {{ invitation.student.first_name }}</li>
+            <li style="margin: 5px 0;">Approve driving hours</li>
+            <li style="margin: 5px 0;">View driving progress and history</li>
+            <li style="margin: 5px 0;">Export reports for the DMV</li>
+            <li style="margin: 5px 0;">Edit student information</li>
+        </ul>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div style="display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px;">
+        <button
+            type="button"
+            id="tab-existing"
+            onclick="showTab('existing')"
+            style="flex: 1; padding: 15px; background-color: #4CAF50; color: white; border: none; cursor: pointer; font-size: 1em; border-radius: 4px 4px 0 0;"
+        >
+            I Have an Account
+        </button>
+        <button
+            type="button"
+            id="tab-new"
+            onclick="showTab('new')"
+            style="flex: 1; padding: 15px; background-color: #f5f5f5; color: #666; border: none; cursor: pointer; font-size: 1em; border-radius: 4px 4px 0 0;"
+        >
+            Create New Account
+        </button>
+    </div>
+
+    <!-- Login Form (Existing Account) -->
+    <div id="existing-account" style="display: block;">
+        <h2>Login to Accept Invitation</h2>
+        <p>Login with your existing DMV+ parent account to accept this invitation.</p>
+
+        <form method="post" action="{% url 'accept_invitation' invitation.token %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="login">
+
+            <div class="form-group">
+                <label for="login_email">Email Address:</label>
+                <input
+                    type="email"
+                    id="login_email"
+                    name="email"
+                    required
+                    placeholder="your.email@example.com"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="login_password">Password:</label>
+                <input
+                    type="password"
+                    id="login_password"
+                    name="password"
+                    required
+                    placeholder="Enter your password"
+                >
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Login & Accept Invitation</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Registration Form (New Account) -->
+    <div id="new-account" style="display: none;">
+        <h2>Create Account to Accept Invitation</h2>
+        <p>Create a new DMV+ parent account to accept this invitation.</p>
+
+        <form method="post" action="{% url 'accept_invitation' invitation.token %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="register">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="first_name">First Name: *</label>
+                    <input
+                        type="text"
+                        id="first_name"
+                        name="first_name"
+                        required
+                        placeholder="John"
+                        value="{{ invitation.invited_first_name|default:'' }}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="last_name">Last Name: *</label>
+                    <input
+                        type="text"
+                        id="last_name"
+                        name="last_name"
+                        required
+                        placeholder="Doe"
+                        value="{{ invitation.invited_last_name|default:'' }}"
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address: *</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    placeholder="your.email@example.com"
+                    value="{{ invitation.invited_email }}"
+                    readonly
+                    style="background-color: #f5f5f5;"
+                >
+                <small>This is the email where the invitation was sent</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password: *</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    placeholder="Minimum 8 characters"
+                    minlength="8"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password_confirm">Confirm Password: *</label>
+                <input
+                    type="password"
+                    id="password_confirm"
+                    name="password_confirm"
+                    required
+                    placeholder="Re-enter your password"
+                    minlength="8"
+                >
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Create Account & Accept Invitation</button>
+            </div>
+        </form>
+    </div>
+
+    <div style="margin-top: 30px; padding: 15px; background-color: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107;">
+        <p style="margin: 0; color: #856404; font-size: 0.9em;">
+            <strong>⏰ Invitation Expires:</strong> {{ invitation.expires_at|date:"F d, Y" }} at {{ invitation.expires_at|time:"g:i A" }}
+        </p>
+    </div>
+</div>
+
+<script>
+function showTab(tab) {
+    const existingTab = document.getElementById('tab-existing');
+    const newTab = document.getElementById('tab-new');
+    const existingForm = document.getElementById('existing-account');
+    const newForm = document.getElementById('new-account');
+
+    if (tab === 'existing') {
+        existingTab.style.backgroundColor = '#4CAF50';
+        existingTab.style.color = 'white';
+        newTab.style.backgroundColor = '#f5f5f5';
+        newTab.style.color = '#666';
+        existingForm.style.display = 'block';
+        newForm.style.display = 'none';
+    } else {
+        newTab.style.backgroundColor = '#4CAF50';
+        newTab.style.color = 'white';
+        existingTab.style.backgroundColor = '#f5f5f5';
+        existingTab.style.color = '#666';
+        newForm.style.display = 'block';
+        existingForm.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

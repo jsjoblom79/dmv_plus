@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}Invitations for {{ student.first_name }} - DMV+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'view_student' student.id %}" style="color: #4CAF50;">← Back to {{ student.first_name }}'s Profile</a>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1>Parent/Guardian Invitations</h1>
+            <p style="color: #666; margin: 5px 0;">Manage access for {{ student.first_name }} {{ student.last_name }}</p>
+        </div>
+        <a href="{% url 'invite_parent' student.id %}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">
+            + Invite Another Parent
+        </a>
+    </div>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if invitations %}
+        <!-- Pending Invitations -->
+        {% with pending_invitations=invitations|dictsort:"status" %}
+            {% if pending_invitations %}
+                <div style="margin-bottom: 30px;">
+                    <h2>Pending Invitations</h2>
+                    {% for invitation in invitations %}
+                        {% if invitation.status == 'PENDING' %}
+                            <div style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin-bottom: 15px; background-color: #fffbea;">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div style="flex: 1;">
+                                        <p style="margin: 0; font-size: 1.1em; font-weight: bold; color: #333;">
+                                            {{ invitation.invited_email }}
+                                        </p>
+                                        {% if invitation.invited_first_name or invitation.invited_last_name %}
+                                            <p style="margin: 5px 0; color: #666;">
+                                                {{ invitation.invited_first_name }} {{ invitation.invited_last_name }}
+                                            </p>
+                                        {% endif %}
+                                        <p style="margin: 5px 0; color: #666; font-size: 0.9em;">
+                                            Invited by {{ invitation.inviter.user.get_full_name }} on {{ invitation.created_at|date:"M d, Y" }}
+                                        </p>
+                                        <p style="margin: 5px 0; color: #856404; font-size: 0.9em;">
+                                            ⏰ Expires {{ invitation.expires_at|date:"M d, Y" }} at {{ invitation.expires_at|time:"g:i A" }}
+                                        </p>
+                                        {% if invitation.message %}
+                                            <div style="margin-top: 10px; padding: 10px; background-color: white; border-radius: 4px; border-left: 3px solid #4CAF50;">
+                                                <p style="margin: 0; color: #666; font-size: 0.85em;"><strong>Personal Message:</strong></p>
+                                                <p style="margin: 5px 0 0 0; color: #333; font-size: 0.9em; font-style: italic;">"{{ invitation.message }}"</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 10px; margin-left: 20px;">
+                                        <span style="padding: 6px 12px; background-color: #FFA500; color: white; border-radius: 4px; text-align: center; white-space: nowrap; font-size: 0.9em;">
+                                            ⏳ Pending
+                                        </span>
+                                        <a href="{% url 'cancel_invitation' invitation.invitation_id %}" style="display: inline-block; padding: 6px 12px; background-color: #f44336; color: white; text-decoration: none; border-radius: 4px; text-align: center; font-size: 0.9em;">
+                                            Cancel
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Accepted Invitations -->
+        {% with accepted_invitations=invitations|dictsort:"accepted_at" %}
+            {% if accepted_invitations %}
+                <div style="margin-bottom: 30px;">
+                    <h2>Accepted Invitations</h2>
+                    {% for invitation in invitations %}
+                        {% if invitation.status == 'ACCEPTED' %}
+                            <div style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin-bottom: 15px; background-color: #f0f9ff;">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div>
+                                        <p style="margin: 0; font-size: 1.1em; font-weight: bold; color: #333;">
+                                            {{ invitation.accepted_by.user.get_full_name }}
+                                        </p>
+                                        <p style="margin: 5px 0; color: #666; font-size: 0.9em;">
+                                            {{ invitation.accepted_by.user.email }}
+                                        </p>
+                                        <p style="margin: 5px 0; color: #666; font-size: 0.9em;">
+                                            Invited by {{ invitation.inviter.user.get_full_name }} on {{ invitation.created_at|date:"M d, Y" }}
+                                        </p>
+                                        <p style="margin: 5px 0; color: #4CAF50; font-size: 0.9em;">
+                                            ✅ Accepted on {{ invitation.accepted_at|date:"M d, Y" }}
+                                        </p>
+                                    </div>
+                                    <span style="padding: 6px 12px; background-color: #4CAF50; color: white; border-radius: 4px; font-size: 0.9em;">
+                                        ✓ Accepted
+                                    </span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Expired/Cancelled Invitations -->
+        {% with old_invitations=invitations|dictsort:"created_at" %}
+            {% if old_invitations %}
+                <div>
+                    <h2>Expired & Cancelled Invitations</h2>
+                    {% for invitation in invitations %}
+                        {% if invitation.status == 'EXPIRED' or invitation.status == 'CANCELLED' %}
+                            <div style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; margin-bottom: 15px; background-color: #f5f5f5; opacity: 0.7;">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div>
+                                        <p style="margin: 0; font-size: 1.1em; font-weight: bold; color: #666;">
+                                            {{ invitation.invited_email }}
+                                        </p>
+                                        {% if invitation.invited_first_name or invitation.invited_last_name %}
+                                            <p style="margin: 5px 0; color: #999;">
+                                                {{ invitation.invited_first_name }} {{ invitation.invited_last_name }}
+                                            </p>
+                                        {% endif %}
+                                        <p style="margin: 5px 0; color: #999; font-size: 0.9em;">
+                                            Invited by {{ invitation.inviter.user.get_full_name }} on {{ invitation.created_at|date:"M d, Y" }}
+                                        </p>
+                                    </div>
+                                    <span style="padding: 6px 12px; background-color: #999; color: white; border-radius: 4px; font-size: 0.9em;">
+                                        {{ invitation.status|title }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+    {% else %}
+        <div style="text-align: center; padding: 60px 20px; background-color: #f5f5f5; border-radius: 4px;">
+            <p style="color: #666; margin-bottom: 20px; font-size: 1.1em;">
+                No invitations have been sent yet for {{ student.first_name }}.
+            </p>
+            <a href="{% url 'invite_parent' student.id %}" class="btn-primary" style="display: inline-block; width: auto; padding: 12px 24px; font-size: 1.1em;">
+                📧 Send First Invitation
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

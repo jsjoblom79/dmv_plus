@@ -1,2 +1,3 @@
 from .parent_profile import ParentProfile
 from .parent_student_relationship import ParentStudentRelationship
+from .parent_invitation import ParentInvitation
